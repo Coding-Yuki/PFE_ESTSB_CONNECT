@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -10,38 +9,65 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { useAuth, type UserRole } from "@/lib/auth-context"
+// We are temporarily bypassing the auth context to test the connection directly
+// import { useAuth, type UserRole } from "@/lib/auth-context" 
 import { GraduationCap, User, BookOpen } from "lucide-react"
+
+// Define the role type locally since we commented out the context
+type UserRole = "student" | "teacher"
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [role, setRole] = useState<UserRole>("student")
+  
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  
   const router = useRouter()
-  const { register } = useAuth()
+  // const { register } = useAuth() // Bypassed for direct testing
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
+    const formData = {
+      name: name,
+      email: email,
+      password: password,
+      role: role
+    }
+
     try {
-      const success = await register(email, password, name, role)
-      if (success) {
-        router.push("/feed")
+      // 👇 THIS IS THE NEW PART: Connecting directly to PHP
+      const response = await fetch('http://localhost/api/auth/register.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // If successful, redirect to the feed
+        router.push("/feed") 
       } else {
-        setError("Erreur lors de l'inscription")
+        // If PHP returns an error (like "Email already exists")
+        setError(data.message || "Erreur lors de l'inscription")
       }
     } catch (err) {
-      setError("Une erreur est survenue")
+      console.error(err);
+      setError("Impossible de contacter le serveur (Vérifiez que Apache/XAMPP est lancé)")
     } finally {
       setLoading(false)
     }
   }
 
+  // 👇 THE REST IS YOUR EXACT UI CODE (UNCHANGED)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-primary/5 p-4">
       <Card className="w-full max-w-md border-0 shadow-xl">
