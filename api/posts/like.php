@@ -56,7 +56,7 @@ try {
     $insert_stmt->close();
 
     // 2. Update the likes count on the posts table
-    $update_post_sql = "UPDATE posts SET likes = likes - 1 WHERE id = ? AND likes > 0";
+    $update_post_sql = "UPDATE posts SET likes = likes + 1 WHERE id = ?";
     $update_stmt = $conn->prepare($update_post_sql);
     $update_stmt->bind_param("i", $post_id);
     $update_stmt->execute();

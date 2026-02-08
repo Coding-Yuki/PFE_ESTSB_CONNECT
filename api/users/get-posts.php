@@ -32,7 +32,46 @@ $result = $stmt->get_result();
 $posts = [];
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
-        // You would also fetch comments and likes for each post here
+        $post_id = $row['id'];
+        
+        // Fetch Liked By user IDs
+        $likes_sql = "SELECT user_id FROM likes WHERE post_id = ?";
+        $likes_stmt = $conn->prepare($likes_sql);
+        $likes_stmt->bind_param("i", $post_id);
+        $likes_stmt->execute();
+        $likes_result = $likes_stmt->get_result();
+        $likedBy = [];
+        while($like_row = $likes_result->fetch_assoc()) {
+            $likedBy[] = $like_row['user_id'];
+        }
+        $likes_stmt->close();
+
+        // Fetch Comments with their authors
+        $comments_sql = "
+            SELECT c.id, c.content, c.created_at, u.id AS author_id, u.name AS author_name, u.avatar AS author_avatar
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.post_id = ?
+            ORDER BY c.created_at DESC";
+        $comments_stmt = $conn->prepare($comments_sql);
+        $comments_stmt->bind_param("i", $post_id);
+        $comments_stmt->execute();
+        $comments_result = $comments_stmt->get_result();
+        $comments = [];
+        while($comment_row = $comments_result->fetch_assoc()) {
+            $comments[] = [
+                'id' => $comment_row['id'],
+                'author' => [
+                    'id' => $comment_row['author_id'],
+                    'name' => $comment_row['author_name'],
+                    'avatar' => $comment_row['author_avatar']
+                ],
+                'content' => $comment_row['content'],
+                'createdAt' => $comment_row['created_at']
+            ];
+        }
+        $comments_stmt->close();
+        
         $posts[] = [
             'id' => $row['id'],
             'author' => [
@@ -43,9 +82,9 @@ if ($result->num_rows > 0) {
             ],
             'content' => $row['content'],
             'image' => $row['image'],
-            'likes' => $row['likes'],
-            'likedBy' => [], // Needs a separate query
-            'comments' => [], // Needs a separate query
+            'likes' => (int)$row['likes'],
+            'likedBy' => $likedBy,
+            'comments' => $comments,
             'createdAt' => $row['created_at']
         ];
     }
