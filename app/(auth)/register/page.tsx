@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-// We are temporarily bypassing the auth context to test the connection directly
-// import { useAuth, type UserRole } from "@/lib/auth-context" 
+import { useAuth, type UserRole } from "@/lib/auth-context"
 import { GraduationCap, User, BookOpen } from "lucide-react"
 
 // Define the role type locally since we commented out the context
@@ -26,41 +25,22 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   
   const router = useRouter()
-  // const { register } = useAuth() // Bypassed for direct testing
+  const { register } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
-    const formData = {
-      name: name,
-      email: email,
-      password: password,
-      role: role
-    }
-
     try {
-      // 👇 THIS IS THE NEW PART: Connecting directly to PHP
-      const response = await fetch('http://localhost/api/auth/register.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // If successful, redirect to the feed
-        router.push("/feed") 
+      const success = await register(email, password, name, role)
+      if (success) {
+        router.push("/feed")
       } else {
-        // If PHP returns an error (like "Email already exists")
-        setError(data.message || "Erreur lors de l'inscription")
+        setError("Erreur lors de l'inscription")
       }
     } catch (err) {
-      console.error(err);
+      console.error(err)
       setError("Impossible de contacter le serveur (Vérifiez que Apache/XAMPP est lancé)")
     } finally {
       setLoading(false)

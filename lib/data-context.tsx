@@ -40,7 +40,7 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
-const API_URL = "http://localhost/est-connect/api"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/est-connect/api"
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([])
@@ -53,7 +53,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const refreshPosts = async () => {
     try {
-      const response = await fetch(`${API_URL}/posts/get-all.php`)
+      const response = await fetch(`${API_URL}/posts/get-all.php`, { credentials: "include" })
       const data = await response.json()
       if (data.success) {
         const parsedPosts = data.posts.map((post: any) => ({
@@ -73,7 +73,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const refreshUsers = async () => {
     try {
-      const response = await fetch(`${API_URL}/users/get-all.php`)
+      const response = await fetch(`${API_URL}/users/get-all.php`, { credentials: "include" })
       const data = await response.json()
       if (data.success) {
         setUsers(data.users)
@@ -87,6 +87,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/posts/create.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, content, image }),
       })
@@ -108,6 +109,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/posts/like.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, user_id: userId }),
       })
@@ -129,6 +131,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/posts/unlike.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, user_id: userId }),
       })
@@ -152,6 +155,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/comments/add.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, user_id: author.id, content }),
       })
@@ -173,7 +177,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getUserById = async (userId: string) => {
     try {
-      const response = await fetch(`${API_URL}/users/get-profile.php?user_id=${userId}`)
+      const response = await fetch(`${API_URL}/users/get-profile.php?user_id=${userId}`, {
+        credentials: "include",
+      })
       const data = await response.json()
       if (data.success) {
         return data.user
@@ -186,7 +192,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getPostsByUserId = async (userId: string) => {
     try {
-      const response = await fetch(`${API_URL}/users/get-posts.php?user_id=${userId}`)
+      const response = await fetch(`${API_URL}/users/get-posts.php?user_id=${userId}`, {
+        credentials: "include",
+      })
       const data = await response.json()
       if (data.success) {
         return data.posts.map((post: any) => ({
@@ -209,6 +217,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/users/follow.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ follower_id: userId, following_id: targetUserId }),
       })
@@ -226,6 +235,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/users/unfollow.php`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ follower_id: userId, following_id: targetUserId }),
       })
@@ -253,7 +263,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const searchUsers = async (query: string, role?: string) => {
     try {
       const url = `${API_URL}/users/search.php?query=${encodeURIComponent(query)}${role ? `&role=${role}` : ""}`
-      const response = await fetch(url)
+      const response = await fetch(url, { credentials: "include" })
       const data = await response.json()
       if (data.success) {
         return data.users

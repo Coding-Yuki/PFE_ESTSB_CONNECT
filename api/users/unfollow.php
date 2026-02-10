@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
 require_once '../config/db.php';
+require_once '../config/jwt.php';
 
 // Handle CORS
 header('Access-Control-Allow-Origin: *');
@@ -9,6 +10,21 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    exit;
+}
+
+// Verify JWT token from cookie
+$token = $_COOKIE['est_connect_token'] ?? null;
+if (!$token) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$payload = verify_jwt($token);
+if (!$payload) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 

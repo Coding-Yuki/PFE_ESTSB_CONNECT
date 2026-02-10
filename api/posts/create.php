@@ -10,6 +10,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../config/db.php';
+require_once '../config/jwt.php';
+
+// Verify JWT token from cookie
+$token = $_COOKIE['est_connect_token'] ?? null;
+if (!$token) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$payload = verify_jwt($token);
+if (!$payload) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$auth_user_id = $payload['sub'] ?? null;
 
 $data = json_decode(file_get_contents("php://input"), true);
 

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once '../config/db.php';
+require_once '../config/jwt.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -48,8 +49,25 @@ try {
         // Remove password from user object before sending
         unset($user['password']);
 
-        // As per the documentation, a JWT token should be returned here.
-        // For now, we are just returning the user data.
+        // Create JWT token for the authenticated user
+        $token = create_jwt(["sub" => $user['id'], "email" => $user['email'], "role" => $user['role']]);
+
+        // Set httpOnly cookie for the JWT. Use SameSite=None for cross-site scenarios;
+        // Secure flag is set only when HTTPS is detected.
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie('est_connect_token', $token, [
+                'expires' => time() + 60 * 60 * 24 * 7,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'None',
+                'secure' => $secure,
+            ]);
+        } else {
+            // Fallback header for older PHP versions
+            $cookie = "est_connect_token={$token}; Path=/; HttpOnly" . ($secure ? "; Secure" : "") . "; SameSite=None";
+            header("Set-Cookie: $cookie", false);
+        }
 
         http_response_code(200); // OK
         echo json_encode(["success" => true, "user" => $user]);

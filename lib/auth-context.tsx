@@ -26,7 +26,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const API_URL = "http://localhost/est-connect/api"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/est-connect/api"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -51,12 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${API_URL}/auth/login.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       })
 
       const data = await response.json()
 
       if (data.success && data.user) {
+        // Server sets httpOnly cookie for the token; frontend stores only user info
         setUser(data.user)
         setIsAuthenticated(true)
         localStorage.setItem("est-connect-user", JSON.stringify(data.user))
@@ -78,12 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${API_URL}/auth/register.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password, name, role }),
       })
 
       const data = await response.json()
 
       if (data.success && data.user) {
+        // Server sets httpOnly cookie for the token; frontend stores only user info
         setUser(data.user)
         setIsAuthenticated(true)
         localStorage.setItem("est-connect-user", JSON.stringify(data.user))
@@ -100,9 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem("est-connect-user")
+    // Inform server to clear the cookie, then clear local state
+    fetch(`${API_URL}/auth/logout.php`, { method: "POST", credentials: "include" }).finally(() => {
+      setUser(null)
+      setIsAuthenticated(false)
+      localStorage.removeItem("est-connect-user")
+    })
   }
 
   return (
